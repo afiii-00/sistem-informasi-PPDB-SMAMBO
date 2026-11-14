@@ -11,11 +11,11 @@ import {
   LogOut, 
   Menu, 
   X, 
-  ShieldCheck,
   ChevronRight,
   ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../../app/providers/AuthContext';
+import { SchoolLogo } from '../ui/SchoolLogo';
 
 export function AdminLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -23,8 +23,8 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -82,21 +82,7 @@ export function AdminLayout() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--color-brand-600)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-              }}
-            >
-              <ShieldCheck size={20} />
-            </div>
+            <SchoolLogo size={40} />
             <div>
               <div style={{ fontWeight: '800', fontSize: '1rem', color: '#FFFFFF', letterSpacing: '-0.01em' }}>
                 PANITIA PPDB

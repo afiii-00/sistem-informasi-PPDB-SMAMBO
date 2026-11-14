@@ -37,11 +37,18 @@ Aplikasi web modern untuk Penerimaan Peserta Didik Baru (PPDB) SMA Muhammadiyah 
 - **Styling:** Vanilla CSS dengan Design Tokens (`tokens.css` & `globals.css`)
 - **Icons:** Lucide React
 - **Typography:** Inter (Google Fonts)
-- **State & Storage:** Stateful Mock Storage via Browser `localStorage` (siap disambungkan ke REST API backend)
+- **Demo:** Stateful Mock Storage via Browser `localStorage`
+- **Database target:** Supabase PostgreSQL (initial schema and Row Level Security policies in `supabase/migrations/`)
+- **Authentication & file storage:** Supabase Auth and private Storage bucket
+- **Hosting target:** Vercel
 
 ---
 
 ## 🚀 Panduan Menjalankan Proyek
+
+### Status Keamanan Demo
+
+Mode demo menggunakan mock authentication dan `localStorage`; jangan gunakan data siswa sungguhan pada mode ini. Mode Supabase mencakup autentikasi, formulir, unggah berkas privat, dan operasi panitia setelah migration serta kredensial proyek disiapkan. Pengiriman WhatsApp masih simulasi. Proteksi rute React saja bukan pengamanan server. Lihat [panduan Supabase](supabase/README.md) untuk menyiapkan mode tersebut.
 
 ### Prasyarat
 - Node.js (v18+)

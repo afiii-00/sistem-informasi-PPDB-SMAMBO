@@ -12,17 +12,23 @@ import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../app/providers/AuthContext';
-import { mockDb } from '../../mocks/mockDb';
+import { applicantData } from '../../services/applicantData';
 
 export function ApplicantDashboard() {
   const { user } = useAuth();
   const [applicant, setApplicant] = useState(null);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
+    let active = true;
     if (user?.registrationNumber) {
-      const data = mockDb.getApplicantById(user.registrationNumber);
-      if (data) setApplicant(data);
+      applicantData.getApplicantById(user.registrationNumber).then((data) => {
+        if (active) setApplicant(data);
+      }).catch(() => {
+        if (active) setDataError('Data pendaftaran gagal dimuat. Muat ulang halaman untuk mencoba kembali.');
+      });
     }
+    return () => { active = false; };
   }, [user]);
 
   const status = applicant?.status || user?.status || 'draft';
@@ -33,6 +39,7 @@ export function ApplicantDashboard() {
 
   return (
     <div>
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
       {/* Welcome Banner */}
       <div
         style={{

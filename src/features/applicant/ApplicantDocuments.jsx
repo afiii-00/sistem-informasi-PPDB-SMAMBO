@@ -1,35 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { UploadCloud, CheckCircle2, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../app/providers/AuthContext';
-import { mockDb } from '../../mocks/mockDb';
+import { applicantData } from '../../services/applicantData';
+import { env } from '../../lib/env';
 
 export function ApplicantDocuments() {
   const { user, refreshUser } = useAuth();
   const [applicant, setApplicant] = useState(null);
   const [uploadNotice, setUploadNotice] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [activeDocument, setActiveDocument] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
+    let active = true;
     if (user?.registrationNumber) {
-      const data = mockDb.getApplicantById(user.registrationNumber);
-      if (data) setApplicant(data);
+      applicantData.getApplicantById(user.registrationNumber).then((data) => {
+        if (active) setApplicant(data);
+      }).catch((error) => {
+        if (active) setUploadError(error.message || 'Data pendaftaran gagal dimuat.');
+      });
     }
+    return () => { active = false; };
   }, [user]);
 
-  const handleSimulateUpload = (docId, docTitle) => {
+  const handleUpload = async (docId, docTitle, file) => {
     if (!applicant) return;
-    const fakeFileName = `scan_${docId}_${applicant.name.toLowerCase().replace(/\s+/g, '_')}.pdf`;
-    mockDb.uploadDocument(applicant.id, docId, fakeFileName);
-    
-    // Refresh local view & user state
-    const updated = mockDb.getApplicantById(applicant.id);
-    setApplicant(updated);
-    refreshUser();
-
-    setUploadNotice(`Berkas "${docTitle}" (${fakeFileName}) berhasil diunggah.`);
-    setTimeout(() => setUploadNotice(''), 4000);
+    try {
+      setUploadError('');
+      const uploadValue = env.USE_MOCK
+        ? `scan_${docId}_${applicant.name.toLowerCase().replace(/\s+/g, '_')}.pdf`
+        : file;
+      const updated = await applicantData.uploadDocument(applicant.id, docId, uploadValue);
+      setApplicant(updated);
+      await refreshUser();
+      setUploadNotice(`Berkas "${docTitle}" (${env.USE_MOCK ? uploadValue : file.name}) berhasil diunggah.`);
+      setTimeout(() => setUploadNotice(''), 4000);
+    } catch (error) {
+      setUploadError(error.message || 'Berkas gagal diunggah.');
+    }
   };
 
   const docs = applicant?.documents || [
@@ -64,6 +76,12 @@ export function ApplicantDocuments() {
         </Alert>
       )}
 
+      {uploadError && (
+        <Alert variant="danger" style={{ marginBottom: '24px' }}>
+          {uploadError}
+        </Alert>
+      )}
+
       {missingRequired.length > 0 && applicant?.status !== 'needs_revision' && (
         <Alert variant="info" style={{ marginBottom: '24px' }}>
           Terdapat {missingRequired.length} berkas wajib yang belum diunggah:{' '}
@@ -72,6 +90,19 @@ export function ApplicantDocuments() {
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {!env.USE_MOCK && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf,image/jpeg,image/png"
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file && activeDocument) handleUpload(activeDocument.id, activeDocument.name, file);
+              event.target.value = '';
+            }}
+          />
+        )}
         {docs.map((doc) => {
           const hasFile = Boolean(doc.fileName);
           const isInvalid = doc.status === 'invalid';
@@ -154,7 +185,13 @@ export function ApplicantDocuments() {
                     variant={hasFile ? (isInvalid ? 'destructive' : 'outline') : 'primary'}
                     size="sm"
                     icon={hasFile ? RefreshCw : UploadCloud}
-                    onClick={() => handleSimulateUpload(doc.id, doc.name)}
+                    onClick={() => {
+                      if (env.USE_MOCK) handleUpload(doc.id, doc.name);
+                      else {
+                        setActiveDocument(doc);
+                        fileInputRef.current?.click();
+                      }
+                    }}
                   >
                     {hasFile ? 'Unggah Ulang File' : 'Pilih & Unggah File'}
                   </Button>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { School, Menu, X, ArrowRight, ShieldCheck, Phone, MapPin, Mail } from 'lucide-react';
+import { Menu, X, ArrowRight, ShieldCheck, Phone, MapPin, Mail } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { SchoolLogo } from '../ui/SchoolLogo';
 import { useAuth } from '../../app/providers/AuthContext';
 
 export function PublicLayout() {
@@ -74,21 +75,7 @@ export function PublicLayout() {
               color: 'var(--color-brand-950)',
             }}
           >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--color-brand-600)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
-              }}
-            >
-              <School size={24} />
-            </div>
+            <SchoolLogo size={46} style={{ boxShadow: '0 4px 12px rgba(15, 23, 42, 0.12)' }} />
             <div>
               <div style={{ fontWeight: '800', fontSize: '1.1rem', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
                 SMA MUHAMMADIYAH
@@ -267,7 +254,7 @@ export function PublicLayout() {
             {/* School Profile */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#FFFFFF', marginBottom: '16px' }}>
-                <School size={26} color="#60A5FA" />
+                <SchoolLogo size={42} />
                 <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>
                   SMA Muhammadiyah Kota Bogor
                 </h4>

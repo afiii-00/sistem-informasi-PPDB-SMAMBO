@@ -5,7 +5,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { CheckCircle2, XCircle, ShieldAlert } from 'lucide-react';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminResults() {
   const [candidates, setCandidates] = useState([]);
@@ -13,13 +13,19 @@ export function AdminResults() {
   const [targetCandidate, setTargetCandidate] = useState(null);
   const [targetAction, setTargetAction] = useState('accepted');
   const [notice, setNotice] = useState('');
+  const [dataError, setDataError] = useState('');
 
-  const loadData = () => {
-    setCandidates(mockDb.getApplicants());
+  const loadData = async () => {
+    const data = await adminData.getApplicants();
+    setCandidates(data);
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    adminData.getApplicants()
+      .then((data) => { if (active) setCandidates(data); })
+      .catch((error) => { if (active) setDataError(error.message || 'Data hasil seleksi gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
   const handleOpenDecision = (cand, action) => {
@@ -28,17 +34,23 @@ export function AdminResults() {
     setConfirmModalOpen(true);
   };
 
-  const handleConfirmDecision = () => {
+  const handleConfirmDecision = async () => {
     if (!targetCandidate) return;
-    mockDb.setResult(targetCandidate.id, targetAction);
-    loadData();
-    setConfirmModalOpen(false);
-    setNotice(`Keputusan resmi seleksi untuk ${targetCandidate.name} (${targetCandidate.id}) telah ditetapkan sebagai ${targetAction === 'accepted' ? 'DITERIMA' : 'TIDAK DITERIMA'}. Notifikasi WhatsApp pengumuman telah dipicu.`);
-    setTimeout(() => setNotice(''), 5000);
+    try {
+      setDataError('');
+      await adminData.setResult(targetCandidate.id, targetAction);
+      await loadData();
+      setConfirmModalOpen(false);
+      setNotice(`Keputusan resmi seleksi untuk ${targetCandidate.name} (${targetCandidate.id}) telah ditetapkan sebagai ${targetAction === 'accepted' ? 'DITERIMA' : 'TIDAK DITERIMA'}.`);
+      setTimeout(() => setNotice(''), 5000);
+    } catch (error) {
+      setDataError(error.message || 'Keputusan gagal disimpan.');
+    }
   };
 
   return (
     <div>
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>
           Penetapan Hasil Seleksi Siswa Baru

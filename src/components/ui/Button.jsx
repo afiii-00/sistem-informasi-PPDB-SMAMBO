@@ -11,6 +11,7 @@ export function Button({
   className = '',
   icon: Icon,
   type = 'button',
+  style = {},
   ...props
 }) {
   const baseStyles = {
@@ -22,6 +23,8 @@ export function Button({
     fontFamily: 'inherit',
     borderRadius: 'var(--radius-md)',
     border: '1px solid transparent',
+    appearance: 'none',
+    WebkitAppearance: 'none',
     cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.6 : 1,
     transition: 'all var(--transition-fast)',
@@ -79,6 +82,7 @@ export function Button({
     ...baseStyles,
     ...sizeStyles[size],
     ...variantStyles[variant],
+    ...style,
     ...(isHovered && !disabled && !isLoading ? hoverEffects[variant] : {}),
   };
 

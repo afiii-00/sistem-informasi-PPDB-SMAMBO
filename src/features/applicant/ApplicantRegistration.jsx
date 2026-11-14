@@ -7,7 +7,8 @@ import { Alert } from '../../components/ui/Alert';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Save, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../app/providers/AuthContext';
-import { mockDb } from '../../mocks/mockDb';
+import { applicantData } from '../../services/applicantData';
+import { isValidNIK, isValidNISN } from '../../lib/validators';
 import { useNavigate } from 'react-router-dom';
 
 export function ApplicantRegistration() {
@@ -16,6 +17,7 @@ export function ApplicantRegistration() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [savedNotice, setSavedNotice] = useState('');
+  const [formError, setFormError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     nik: '',
@@ -35,9 +37,10 @@ export function ApplicantRegistration() {
   });
 
   useEffect(() => {
+    let active = true;
     if (user?.registrationNumber) {
-      const applicant = mockDb.getApplicantById(user.registrationNumber);
-      if (applicant) {
+      applicantData.getApplicantById(user.registrationNumber).then((applicant) => {
+        if (!active || !applicant) return;
         setFormData({
           name: applicant.name || user.name || '',
           nik: applicant.nik || '',
@@ -55,35 +58,51 @@ export function ApplicantRegistration() {
           gradYear: applicant.gradYear || '2026',
           track: applicant.track || 'MIPA',
         });
-      }
+      }).catch((error) => {
+        if (active) setFormError(error.message || 'Data formulir gagal dimuat.');
+      });
     }
+    return () => { active = false; };
   }, [user]);
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (user?.registrationNumber) {
-      mockDb.updateApplicant(user.registrationNumber, formData);
-      refreshUser();
-      setSavedNotice('Draf formulir pendaftaran berhasil disimpan.');
-      setTimeout(() => setSavedNotice(''), 3000);
+      try {
+        setFormError('');
+        await applicantData.updateApplicant(user.registrationNumber, formData);
+        await refreshUser();
+        setSavedNotice('Draf formulir pendaftaran berhasil disimpan.');
+        setTimeout(() => setSavedNotice(''), 3000);
+      } catch (error) {
+        setFormError(error.message || 'Draf gagal disimpan.');
+      }
     }
   };
 
-  const handleSubmitFinal = () => {
+  const handleSubmitFinal = async () => {
     if (!formData.name || !formData.nik || !formData.nisn || !formData.schoolOrigin) {
-      alert('Harap lengkapi semua field wajib bertanda bintang (*) sebelum mengajukan formulir.');
+      setFormError('Harap lengkapi nama, NIK, NISN, dan asal sekolah sebelum mengajukan formulir.');
+      return;
+    }
+    if (!isValidNIK(formData.nik) || !isValidNISN(formData.nisn)) {
+      setFormError('NIK harus 16 digit dan NISN harus 10 digit.');
       return;
     }
 
     if (user?.registrationNumber) {
-      mockDb.updateApplicant(user.registrationNumber, formData);
-      mockDb.submitRegistration(user.registrationNumber);
-      refreshUser();
-      alert('Formulir pendaftaran berhasil diajukan! Anda sekarang dapat memeriksa dokumen pendukung.');
-      navigate('/applicant/documents');
+      try {
+        setFormError('');
+        await applicantData.updateApplicant(user.registrationNumber, formData);
+        await applicantData.submitRegistration(user.registrationNumber);
+        await refreshUser();
+        navigate('/applicant/documents');
+      } catch (error) {
+        setFormError(error.message || 'Formulir gagal diajukan.');
+      }
     }
   };
 
@@ -116,6 +135,12 @@ export function ApplicantRegistration() {
       {savedNotice && (
         <Alert variant="success" style={{ marginBottom: '20px' }}>
           {savedNotice}
+        </Alert>
+      )}
+
+      {formError && (
+        <Alert variant="danger" style={{ marginBottom: '20px' }}>
+          {formError}
         </Alert>
       )}
 

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { SchoolLogo } from '../../components/ui/SchoolLogo';
 
 export function LandingPage() {
   return (
@@ -21,7 +22,9 @@ export function LandingPage() {
       {/* Hero Section */}
       <section
         style={{
-          background: 'linear-gradient(135deg, #0B1F46 0%, #17458F 60%, #1D5BC4 100%)',
+          backgroundImage: 'linear-gradient(90deg, rgba(5, 20, 43, 0.88) 0%, rgba(7, 31, 64, 0.72) 52%, rgba(7, 31, 64, 0.42) 100%), url("/smambo-school.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 48%',
           color: '#FFFFFF',
           padding: '80px 0 100px 0',
           position: 'relative',
@@ -44,6 +47,7 @@ export function LandingPage() {
 
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: '820px', margin: '0 auto', textAlign: 'center' }}>
+            <SchoolLogo size={82} style={{ margin: '0 auto 18px', borderRadius: '16px', boxShadow: '0 12px 28px rgba(0, 0, 0, 0.26)' }} />
             <div
               style={{
                 display: 'inline-flex',

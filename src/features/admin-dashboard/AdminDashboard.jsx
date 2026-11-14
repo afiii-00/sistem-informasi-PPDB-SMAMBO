@@ -13,17 +13,25 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Link } from 'react-router-dom';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminDashboard() {
   const [applicants, setApplicants] = useState([]);
   const [settings, setSettings] = useState(null);
   const [whatsAppLogs, setWhatsAppLogs] = useState([]);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
-    setApplicants(mockDb.getApplicants());
-    setSettings(mockDb.getSettings());
-    setWhatsAppLogs(mockDb.getWhatsAppLogs());
+    let active = true;
+    Promise.all([adminData.getApplicants(), adminData.getSettings(), adminData.getWhatsAppLogs()])
+      .then(([apps, config, logs]) => {
+        if (!active) return;
+        setApplicants(apps);
+        setSettings(config);
+        setWhatsAppLogs(logs);
+      })
+      .catch((error) => { if (active) setDataError(error.message || 'Data dashboard gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
   const total = applicants.length;
@@ -53,6 +61,8 @@ export function AdminDashboard() {
           Monitoring pendaftar, antrean verifikasi berkas, dan aktivitas gateway secara terpusat.
         </p>
       </div>
+
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
 
       {/* Metric Cards */}
       <div

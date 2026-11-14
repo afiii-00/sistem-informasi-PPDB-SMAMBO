@@ -6,7 +6,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/FormField';
 import { Alert } from '../../components/ui/Alert';
 import { FileCheck2, AlertTriangle, Eye, CheckCircle } from 'lucide-react';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminVerification() {
   const [applicants, setApplicants] = useState([]);
@@ -14,22 +14,30 @@ export function AdminVerification() {
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState('');
   const [actionNotice, setActionNotice] = useState('');
+  const [dataError, setDataError] = useState('');
 
-  const loadData = () => {
-    const all = mockDb.getApplicants();
+  const loadData = async () => {
+    const all = await adminData.getApplicants();
     // Show applicants that are submitted, under_review, or needs_revision
     setApplicants(all.filter((a) => ['submitted', 'under_review', 'needs_revision'].includes(a.status)));
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    loadData().catch((error) => { if (active) setDataError(error.message || 'Data verifikasi gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
-  const handleApprove = (app) => {
-    mockDb.approveAllDocuments(app.id);
-    loadData();
-    setActionNotice(`Berkas ${app.name} (${app.id}) berhasil diverifikasi lengkap! Status berubah menjadi Dalam Verifikasi.`);
-    setTimeout(() => setActionNotice(''), 4000);
+  const handleApprove = async (app) => {
+    try {
+      setDataError('');
+      await adminData.approveAllDocuments(app.id);
+      await loadData();
+      setActionNotice(`Berkas ${app.name} (${app.id}) berhasil diverifikasi lengkap! Status berubah menjadi Dalam Verifikasi.`);
+      setTimeout(() => setActionNotice(''), 4000);
+    } catch (error) {
+      setDataError(error.message || 'Verifikasi gagal disimpan.');
+    }
   };
 
   const handleOpenRevision = (app) => {
@@ -38,16 +46,21 @@ export function AdminVerification() {
     setRevisionModalOpen(true);
   };
 
-  const handleConfirmRevision = () => {
+  const handleConfirmRevision = async () => {
     if (!revisionNotes) {
       alert('Harap tuliskan catatan dokumen yang perlu diperbaiki.');
       return;
     }
-    mockDb.requestRevision(selectedApplicant.id, revisionNotes);
-    loadData();
-    setRevisionModalOpen(false);
-    setActionNotice(`Permintaan perbaikan berkas untuk ${selectedApplicant.name} telah dikirim ke portal dan WhatsApp siswa.`);
-    setTimeout(() => setActionNotice(''), 4000);
+    try {
+      setDataError('');
+      await adminData.requestRevision(selectedApplicant.id, revisionNotes);
+      await loadData();
+      setRevisionModalOpen(false);
+      setActionNotice(`Permintaan perbaikan berkas untuk ${selectedApplicant.name} telah dicatat.`);
+      setTimeout(() => setActionNotice(''), 4000);
+    } catch (error) {
+      setDataError(error.message || 'Permintaan revisi gagal disimpan.');
+    }
   };
 
   return (
@@ -60,6 +73,8 @@ export function AdminVerification() {
           Terdapat {applicants.length} berkas calon siswa yang siap ditinjau dan diverifikasi panitia.
         </p>
       </div>
+
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
 
       {actionNotice && (
         <Alert variant="success" style={{ marginBottom: '20px' }}>

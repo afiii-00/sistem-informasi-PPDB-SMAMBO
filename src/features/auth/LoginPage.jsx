@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, School, ShieldCheck, User } from 'lucide-react';
+import { LogIn, ShieldCheck, User } from 'lucide-react';
 import { FormField, Input } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../app/providers/AuthContext';
+import { SchoolLogo } from '../../components/ui/SchoolLogo';
 
 export function LoginPage() {
   const [role, setRole] = useState('applicant'); // 'applicant' | 'admin'
@@ -14,7 +15,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, useMock, authError } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -22,7 +23,7 @@ export function LoginPage() {
     setError('');
 
     if (!email || !password) {
-      setError('Harap masukkan email/nomor WhatsApp dan kata sandi.');
+      setError(`Harap masukkan ${useMock ? 'email/nomor WhatsApp' : 'email'} dan kata sandi.`);
       return;
     }
 
@@ -33,16 +34,19 @@ export function LoginPage() {
 
       const target = role === 'admin' ? '/admin/dashboard' : '/applicant/dashboard';
       navigate(target, { replace: true });
-    } catch {
+    } catch (loginError) {
       setIsLoading(false);
-      setError('Kredensial tidak valid. Silakan periksa kembali email dan kata sandi.');
+      setError(loginError instanceof Error ? loginError.message : 'Kredensial tidak valid. Silakan periksa kembali email dan kata sandi.');
     }
   };
 
   const handleDemoFill = (selectedRole) => {
     setRole(selectedRole);
     setError('');
-    if (selectedRole === 'admin') {
+    if (!useMock) {
+      setEmail('');
+      setPassword('');
+    } else if (selectedRole === 'admin') {
       setEmail('panitia@smambo.sch.id');
       setPassword('admin123');
     } else {
@@ -63,22 +67,7 @@ export function LoginPage() {
     >
       <div style={{ width: '100%', maxWidth: '440px' }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-lg)',
-              backgroundColor: 'var(--color-brand-600)',
-              color: '#FFFFFF',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '12px',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
-            }}
-          >
-            <School size={28} />
-          </div>
+          <SchoolLogo size={64} style={{ margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.16)' }} />
           <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>
             Masuk Portal PPDB
           </h2>
@@ -88,6 +77,11 @@ export function LoginPage() {
         </div>
 
         <Card>
+          {!useMock && authError && (
+            <Alert variant="warning" style={{ marginBottom: '16px' }}>
+              {authError}
+            </Alert>
+          )}
           {/* Role selector tabs */}
           <div
             style={{
@@ -157,14 +151,14 @@ export function LoginPage() {
 
           <form onSubmit={handleLogin}>
             <FormField
-              label={role === 'admin' ? 'Email Panitia' : 'Email / No. WhatsApp / No. Pendaftaran'}
+              label={role === 'admin' ? 'Email Panitia' : useMock ? 'Email / No. WhatsApp / No. Pendaftaran' : 'Alamat Email'}
               id="email"
               required
             >
               <Input
                 id="email"
                 type="text"
-                placeholder={role === 'admin' ? 'panitia@smambo.sch.id' : 'calon.siswa@demo.id atau 0812xxxx'}
+                placeholder={role === 'admin' ? 'panitia@smambo.sch.id' : useMock ? 'calon.siswa@demo.id atau 0812xxxx' : 'nama@email.com'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

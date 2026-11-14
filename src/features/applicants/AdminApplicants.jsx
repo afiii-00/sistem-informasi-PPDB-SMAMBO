@@ -6,16 +6,22 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Modal } from '../../components/ui/Modal';
 import { Eye, Download } from 'lucide-react';
 import { maskPhoneNumber } from '../../lib/formatters';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
+import { Alert } from '../../components/ui/Alert';
 
 export function AdminApplicants() {
   const [applicants, setApplicants] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedApp, setSelectedApp] = useState(null);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
-    setApplicants(mockDb.getApplicants());
+    let active = true;
+    adminData.getApplicants()
+      .then((data) => { if (active) setApplicants(data); })
+      .catch((error) => { if (active) setDataError(error.message || 'Data pendaftar gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
   const filtered = applicants.filter((app) => {
@@ -50,6 +56,7 @@ export function AdminApplicants() {
 
   return (
     <div>
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>

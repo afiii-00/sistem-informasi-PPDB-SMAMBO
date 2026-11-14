@@ -5,18 +5,24 @@ import { Alert } from '../../components/ui/Alert';
 import { Button } from '../../components/ui/Button';
 import { CheckCircle2, Clock, Send, FileEdit, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../app/providers/AuthContext';
-import { mockDb } from '../../mocks/mockDb';
+import { applicantData } from '../../services/applicantData';
 import { Link } from 'react-router-dom';
 
 export function ApplicantStatus() {
   const { user } = useAuth();
   const [applicant, setApplicant] = useState(null);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
+    let active = true;
     if (user?.registrationNumber) {
-      const data = mockDb.getApplicantById(user.registrationNumber);
-      if (data) setApplicant(data);
+      applicantData.getApplicantById(user.registrationNumber).then((data) => {
+        if (active) setApplicant(data);
+      }).catch(() => {
+        if (active) setDataError('Status pendaftaran gagal dimuat. Muat ulang halaman untuk mencoba kembali.');
+      });
     }
+    return () => { active = false; };
   }, [user]);
 
   const status = applicant?.status || user?.status || 'draft';
@@ -69,6 +75,7 @@ export function ApplicantStatus() {
 
   return (
     <div>
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>
           Pelacakan Status Resmi Pendaftaran

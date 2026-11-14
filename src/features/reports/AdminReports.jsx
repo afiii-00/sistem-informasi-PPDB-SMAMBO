@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/FormField';
+import { Alert } from '../../components/ui/Alert';
 import { FileSpreadsheet, Download, FileText, CheckCircle2, Printer } from 'lucide-react';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminReports() {
   const [reportType, setReportType] = useState('all');
   const [exportFormat, setExportFormat] = useState('csv');
   const [applicants, setApplicants] = useState([]);
+  const [dataError, setDataError] = useState('');
 
   useEffect(() => {
-    setApplicants(mockDb.getApplicants());
+    let active = true;
+    adminData.getApplicants()
+      .then((data) => { if (active) setApplicants(data); })
+      .catch((error) => { if (active) setDataError(error.message || 'Data laporan gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
   const getFilteredData = () => {
@@ -86,6 +92,7 @@ export function AdminReports() {
 
   return (
     <div>
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>
           Laporan & Rekapitulasi Data PPDB

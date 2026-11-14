@@ -2,25 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
-import { MessageSquare, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MessageSquare, RefreshCw, CheckCircle2, AlertCircle, Clock3 } from 'lucide-react';
 import { maskPhoneNumber } from '../../lib/formatters';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminWhatsApp() {
   const [messages, setMessages] = useState([]);
+  const [dataError, setDataError] = useState('');
 
-  const loadData = () => {
-    setMessages(mockDb.getWhatsAppLogs());
+  const loadData = async () => {
+    const data = await adminData.getWhatsAppLogs();
+    setMessages(data);
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    loadData().catch((error) => { if (active) setDataError(error.message || 'Log WhatsApp gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
-  const handleRetry = (msgId) => {
-    mockDb.retryWhatsAppMessage(msgId);
-    loadData();
-    alert(`Pengiriman ulang pesan ${msgId} berhasil disimulasikan dan tercatat.`);
+  const handleRetry = async (msgId) => {
+    try {
+      setDataError('');
+      await adminData.retryWhatsAppMessage(msgId);
+      await loadData();
+      alert(`Pengiriman ulang pesan ${msgId} berhasil disimulasikan dan tercatat.`);
+    } catch (error) {
+      setDataError(error.message || 'Pengiriman ulang gagal.');
+    }
   };
 
   const deliveredCount = messages.filter((m) => m.status === 'delivered').length;
@@ -37,6 +46,8 @@ export function AdminWhatsApp() {
           Monitoring pengiriman notifikasi otomatis PPDB ke nomor WhatsApp calon siswa dan orang tua.
         </p>
       </div>
+
+      {dataError && <Alert variant="danger" style={{ marginBottom: '20px' }}>{dataError}</Alert>}
 
       <Alert variant="info" style={{ marginBottom: '24px' }}>
         <strong>Mode Gateway Simulasi Terisolasi (RAD Baseline):</strong> Seluruh pesan pendaftaran, verifikasi berkas, dan hasil seleksi tercatat secara otomatis. Kredensial provider eksternal dijaga aman di sisi backend.
@@ -104,13 +115,17 @@ export function AdminWhatsApp() {
                     {msg.content}
                   </td>
                   <td style={{ padding: '12px 8px' }}>
-                    {msg.status === 'delivered' ? (
+                    {msg.status === 'delivered' || msg.status === 'sent' ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-success)', fontSize: '0.8rem', fontWeight: '600' }}>
                         <CheckCircle2 size={14} /> Terkirim
                       </span>
-                    ) : (
+                    ) : msg.status === 'failed' ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-danger)', fontSize: '0.8rem', fontWeight: '600' }}>
                         <AlertCircle size={14} /> Gagal
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--color-warning)', fontSize: '0.8rem', fontWeight: '600' }}>
+                        <Clock3 size={14} /> Dalam antrean
                       </span>
                     )}
                   </td>

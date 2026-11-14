@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, School } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { FormField, Input } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../app/providers/AuthContext';
 import { isValidEmail, isValidIndonesianPhone } from '../../lib/validators';
+import { SchoolLogo } from '../../components/ui/SchoolLogo';
 
 export function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -15,6 +16,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
@@ -51,12 +53,16 @@ export function RegisterPage() {
 
     try {
       setIsLoading(true);
-      await register(fullName, email, phone, password);
+      const result = await register(fullName, email, phone, password);
       setIsLoading(false);
+      if (result?.requiresEmailConfirmation) {
+        setNotice('Akun berhasil dibuat. Buka tautan verifikasi yang dikirim ke email Anda, lalu masuk ke portal.');
+        return;
+      }
       navigate('/applicant/registration', { replace: true });
-    } catch {
+    } catch (registerError) {
       setIsLoading(false);
-      setError('Terjadi kendala saat membuat akun. Silakan coba kembali.');
+      setError(registerError instanceof Error ? registerError.message : 'Terjadi kendala saat membuat akun. Silakan coba kembali.');
     }
   };
 
@@ -72,22 +78,7 @@ export function RegisterPage() {
     >
       <div style={{ width: '100%', maxWidth: '480px' }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: 'var(--radius-lg)',
-              backgroundColor: 'var(--color-brand-600)',
-              color: '#FFFFFF',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '12px',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
-            }}
-          >
-            <School size={28} />
-          </div>
+          <SchoolLogo size={64} style={{ margin: '0 auto 12px', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.16)' }} />
           <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--color-brand-950)', margin: 0 }}>
             Registrasi Akun Calon Siswa
           </h2>
@@ -97,6 +88,11 @@ export function RegisterPage() {
         </div>
 
         <Card>
+          {notice && (
+            <Alert variant="success" style={{ marginBottom: '16px' }}>
+              {notice}
+            </Alert>
+          )}
           {error && (
             <Alert variant="danger" style={{ marginBottom: '16px' }}>
               {error}

@@ -9,13 +9,13 @@ import {
   LogOut, 
   Menu, 
   X, 
-  School,
   User,
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../app/providers/AuthContext';
 import { StatusBadge } from '../ui/StatusBadge';
 import { Button } from '../ui/Button';
+import { SchoolLogo } from '../ui/SchoolLogo';
 
 export function ApplicantLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -23,8 +23,8 @@ export function ApplicantLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -83,20 +83,7 @@ export function ApplicantLayout() {
           }}
         >
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-            <div
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--color-brand-600)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <School size={20} />
-            </div>
+            <SchoolLogo size={40} />
             <div>
               <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--color-brand-950)' }}>
                 PORTAL SISWA

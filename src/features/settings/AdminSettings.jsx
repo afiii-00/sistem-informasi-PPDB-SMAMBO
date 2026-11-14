@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { FormField, Input } from '../../components/ui/FormField';
 import { Alert } from '../../components/ui/Alert';
 import { Save } from 'lucide-react';
-import { mockDb } from '../../mocks/mockDb';
+import { adminData } from '../../services/adminData';
 
 export function AdminSettings() {
   const [settings, setSettings] = useState({
@@ -18,22 +18,31 @@ export function AdminSettings() {
   });
   const [auditLogs, setAuditLogs] = useState([]);
   const [notice, setNotice] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const s = mockDb.getSettings();
-    if (s) setSettings(s);
-    setAuditLogs(mockDb.getAuditLogs());
+    let active = true;
+    Promise.all([adminData.getSettings(), adminData.getAuditLogs()])
+      .then(([s, logs]) => {
+        if (!active) return;
+        if (s) setSettings(s);
+        setAuditLogs(logs);
+      })
+      .catch((loadError) => { if (active) setError(loadError.message || 'Pengaturan gagal dimuat.'); });
+    return () => { active = false; };
   }, []);
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    mockDb.updateSettings({
-      ...settings,
-      quota: Number(settings.quota),
-    });
-    setAuditLogs(mockDb.getAuditLogs());
-    setNotice(true);
-    setTimeout(() => setNotice(false), 3000);
+    try {
+      setError('');
+      await adminData.updateSettings({ ...settings, quota: Number(settings.quota) });
+      setAuditLogs(await adminData.getAuditLogs());
+      setNotice(true);
+      setTimeout(() => setNotice(false), 3000);
+    } catch (saveError) {
+      setError(saveError.message || 'Pengaturan gagal disimpan.');
+    }
   };
 
   const handleChange = (key, val) => {
@@ -50,6 +59,8 @@ export function AdminSettings() {
           Kelola kuota pendaftar, periode gelombang, dan inspeksi riwayat aktivitas panitia.
         </p>
       </div>
+
+      {error && <Alert variant="danger" style={{ marginBottom: '20px' }}>{error}</Alert>}
 
       {notice && (
         <Alert variant="success" style={{ marginBottom: '20px' }}>
